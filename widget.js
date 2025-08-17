@@ -96,6 +96,32 @@
       100% { border-image-source: linear-gradient(135deg, #00f0ff, #00ff85, #ff005c, #ffe600, #00f0ff);}
     }
 
+    .chat-support-btn {
+      display: none;
+      position: fixed;
+      bottom: 18px;
+      right: 12px;
+      z-index: 9999;
+      background: linear-gradient(90deg, #00f0ff 0%, #00ff85 100%);
+      color: #222;
+      font-family: 'Inter', 'Montserrat', Arial, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 20px 8px 20px 8px;
+      padding: 12px 22px 12px 18px;
+      box-shadow: 0 4px 16px #00f0ff33;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      outline: none;
+      letter-spacing: 0.5px;
+    }
+    .chat-support-btn:hover {
+      background: linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%);
+      color: #222;
+      box-shadow: 0 2px 8px #fcb69f33;
+    }
+
     .chat-window {
       position: fixed;
       bottom: 90px;
@@ -260,11 +286,10 @@
     /* --- Mobile Responsive Styles --- */
     @media (max-width: 600px) {
       .chat-bubble {
-        right: 12px;
-        bottom: 12px;
-        width: 60px;
-        height: 60px;
-        font-size: 2rem;
+        display: none !important;
+      }
+      .chat-support-btn {
+        display: block !important;
       }
       .chat-window {
         right: 0 !important;
@@ -282,7 +307,7 @@
   `;
   document.head.appendChild(style);
 
-  // Create chat bubble
+  // Create chat bubble (desktop)
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble";
   bubble.innerHTML = `
@@ -292,6 +317,12 @@
     </div>
   `;
   document.body.appendChild(bubble);
+
+  // Create support button (mobile)
+  const supportBtn = document.createElement("button");
+  supportBtn.className = "chat-support-btn";
+  supportBtn.innerHTML = "💬 Support";
+  document.body.appendChild(supportBtn);
 
   // Create chat window
   const chat = document.createElement("div");
@@ -328,15 +359,41 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
-  // Open/close
-  bubble.addEventListener("click", () => {
+  // Open/close logic
+  function openChat() {
     chat.classList.add("active");
     bubble.style.display = "none";
-  });
-  closeBtn.addEventListener("click", () => {
+    supportBtn.style.display = "none";
+  }
+  function closeChat() {
     chat.classList.remove("active");
-    setTimeout(() => (bubble.style.display = "flex"), 300);
-  });
+    // Show correct trigger based on screen size
+    setTimeout(() => {
+      if (window.innerWidth <= 600) {
+        supportBtn.style.display = "block";
+      } else {
+        bubble.style.display = "flex";
+      }
+    }, 300);
+  }
+
+  bubble.addEventListener("click", openChat);
+  supportBtn.addEventListener("click", openChat);
+  closeBtn.addEventListener("click", closeChat);
+
+  // Responsive: show/hide triggers on resize
+  function handleResize() {
+    if (chat.classList.contains("active")) return;
+    if (window.innerWidth <= 600) {
+      bubble.style.display = "none";
+      supportBtn.style.display = "block";
+    } else {
+      bubble.style.display = "flex";
+      supportBtn.style.display = "none";
+    }
+  }
+  window.addEventListener("resize", handleResize);
+  handleResize();
 
   // Send message to backend
   async function sendMessage() {
@@ -347,7 +404,7 @@
     input.value = "";
 
     try {
-      const res = await fetch("http://localhost:5000/chat", {
+      const res = await fetch("https://texnomart-customer-support-server.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
